@@ -137,6 +137,7 @@ void read_sockets(int num_ready, int serverSocket, fd_set *fd_set, struct Table_
     struct Entry *entry_ptr;
     int i;
     int j;
+    FD_ZERO(fd_set);
     if (FD_ISSET(serverSocket, fd_set)) {
 	/* accept client and register their socket as in use */
         entry.socketNum = tcpAccept(serverSocket, 0);
