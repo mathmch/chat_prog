@@ -97,6 +97,7 @@ void initialize_table(struct Table_Header *table_header, int numEntries) {
     table_header->table = create_table(numEntries, table_header->entry_size);
 }
 
+/* basic server sending and recieving */
 void server_operation(int serverSocket) {
     fd_set fd_set;
     int num_ready;
@@ -109,11 +110,12 @@ void server_operation(int serverSocket) {
 	    perror("select");
 	    exit(EXIT_FAILURE);
 	}
-	printf("%d", num_ready);
+	printf("here\n");
 	read_sockets(num_ready, serverSocket, &fd_set, &table_header);
     }
 }
 
+/* builds the fd_set with all active sockets */
 int build_fdset(fd_set *fd_set, int serverSocket, struct Table_Header *table_header) {
     int i;
     int highest_socketnum;
@@ -133,6 +135,7 @@ int build_fdset(fd_set *fd_set, int serverSocket, struct Table_Header *table_hea
     return highest_socketnum;
 }
 
+/* determines which sockets are ready for reading */
 void read_sockets(int num_ready, int serverSocket, fd_set *fd_set, struct Table_Header *table_header) {
     struct Entry entry;
     struct Entry *entry_ptr;
@@ -141,7 +144,7 @@ void read_sockets(int num_ready, int serverSocket, fd_set *fd_set, struct Table_
     if (FD_ISSET(serverSocket, fd_set)) {
 	/* accept client and register their socket as in use */
         entry.socketNum = tcpAccept(serverSocket, 0);
-	recvFromClient(entry.socketNum);
+	entry.socketNum = tcpAccept(serverSocket, 0);
 	if (table_header->max_entries <= entry.socketNum) {
 	    table_header->table = realloc_table(table_header->table, table_header->max_entries,
 					        table_header->max_entries * 2, table_header->entry_size);

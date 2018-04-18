@@ -25,9 +25,11 @@ int initialize_connection(int argc, char * argv[]);
 
 int main(int argc, char * argv[])
 {
-    int socketNum = 0;
+    int i;
+    int socketNum;
     socketNum = initialize_connection(argc, argv);
-    sleep(20);
+    for (i = 0; i < 3; i++) 
+	sendToServer(socketNum);
     close(socketNum);	
     return 0;
 }
@@ -39,7 +41,7 @@ void sendToServer(int socketNum)
     int sent = 0;            //actual amount of data sent/* get the data and send it   */
 			
     printf("Enter the data to send: ");
-    scanf("%" xstr(MAXBUF) "[^\n]%*[^\n]", sendBuf);
+    fgets(sendBuf, MAXBUF, stdin);
 	
     sendLen = strlen(sendBuf) + 1;
     printf("read: %s len: %d\n", sendBuf, sendLen);
