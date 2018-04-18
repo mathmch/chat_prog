@@ -12,18 +12,18 @@ ifeq ("$(ARCH)", "i686")
 	FILE = 32
 endif
 
-all:  $(FILE) myClient$(FILE) myServer$(FILE)
+all:  $(FILE) cclient$(FILE) server$(FILE)
 
 32: 
 	# to make life easier - automatically deletes .o's that were most likely created on a 64 bit machine
 	# assumes you are doing most of your development on 64 bit machines
 	rm -f *.o
 	
-myClient$(FILE): myClient.c networks.o gethostbyname6.o
-	$(CC) $(CFLAGS) -o myClient$(FILE) myClient.c networks.o gethostbyname6.o $(LIBS)
+cclient$(FILE): cclient.c networks.o gethostbyname6.o
+	$(CC) $(CFLAGS) -o cclient$(FILE) cclient.c networks.o gethostbyname6.o $(LIBS)
 
-myServer$(FILE): myServer.c networks.o gethostbyname6.o
-	$(CC) $(CFLAGS) -o myServer$(FILE) myServer.c networks.o gethostbyname6.o $(LIBS)
+server$(FILE): server.c networks.o gethostbyname6.o arraylist.o
+	$(CC) $(CFLAGS) -o server$(FILE) server.c networks.o gethostbyname6.o arraylist.o $(LIBS)
 
 .c.o:
 	gcc -c $(CFLAGS) $< -o $@ $(LIBS)

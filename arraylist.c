@@ -4,7 +4,7 @@
 #include <string.h>
 
 /* Note: entry_size * index converts the index of an entry to a byte offset
- * from the beginning of the table;
+ * from the beginning of the table; */
 
 /* initialize table, all values set to 0 */
 uint8_t *create_table(int num_entries, int entry_size) {
