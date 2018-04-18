@@ -27,7 +27,7 @@ int main(int argc, char * argv[])
 {
     int socketNum = 0;
     socketNum = initialize_connection(argc, argv);
-    
+    sleep(20);
     close(socketNum);	
     return 0;
 }

@@ -109,6 +109,7 @@ void server_operation(int serverSocket) {
 	    perror("select");
 	    exit(EXIT_FAILURE);
 	}
+	printf("%d", num_ready);
 	read_sockets(num_ready, serverSocket, &fd_set, &table_header);
     }
 }
@@ -137,10 +138,10 @@ void read_sockets(int num_ready, int serverSocket, fd_set *fd_set, struct Table_
     struct Entry *entry_ptr;
     int i;
     int j;
-    FD_ZERO(fd_set);
     if (FD_ISSET(serverSocket, fd_set)) {
 	/* accept client and register their socket as in use */
         entry.socketNum = tcpAccept(serverSocket, 0);
+	recvFromClient(entry.socketNum);
 	if (table_header->max_entries <= entry.socketNum) {
 	    table_header->table = realloc_table(table_header->table, table_header->max_entries,
 					        table_header->max_entries * 2, table_header->entry_size);
