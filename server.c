@@ -41,6 +41,7 @@ void initialize_table(struct Table_Header *table_header, int numEntries);
 int build_fdset(fd_set *fd_set, int serverSocket, struct Table_Header *table_header);
 void read_sockets(int num_ready, int serverSocket, fd_set *fd_set, struct Table_Header *table_header);
 void print_table(struct Table_Header *table_header);
+void process_data(int socketNum, struct Table_Header *table_header);
 
 int main(int argc, char *argv[])
 {
@@ -110,7 +111,6 @@ void server_operation(int serverSocket) {
 	    perror("select");
 	    exit(EXIT_FAILURE);
 	}
-	printf("here\n");
 	read_sockets(num_ready, serverSocket, &fd_set, &table_header);
     }
 }
@@ -143,8 +143,7 @@ void read_sockets(int num_ready, int serverSocket, fd_set *fd_set, struct Table_
     int j;
     if (FD_ISSET(serverSocket, fd_set)) {
 	/* accept client and register their socket as in use */
-        entry.socketNum = tcpAccept(serverSocket, 0);
-	entry.socketNum = tcpAccept(serverSocket, 0);
+        entry.socketNum = tcpAccept(serverSocket, 1);
 	if (table_header->max_entries <= entry.socketNum) {
 	    table_header->table = realloc_table(table_header->table, table_header->max_entries,
 					        table_header->max_entries * 2, table_header->entry_size);
@@ -158,13 +157,27 @@ void read_sockets(int num_ready, int serverSocket, fd_set *fd_set, struct Table_
 	for (j = 0; j < table_header->max_entries; j++) {
 	    entry_ptr = (struct Entry*)table_fetch(table_header->table, table_header->entry_size, j);
 	    /* check if the location had a valid entry */
-	    if (*((uint8_t *)entry_ptr) != 0) 
-	        if (FD_ISSET(entry_ptr->socketNum, fd_set)) {
-		    /* handle client message */
-		}
+	    if (*((uint8_t *)entry_ptr) != 0 && FD_ISSET(entry_ptr->socketNum, fd_set)) {
+		process_data(entry_ptr->socketNum, table_header);
+	    }
 	}
     }
-    print_table(table_header);
+}
+
+void process_data(int socketNum, struct Table_Header *table_header){
+    int read;
+    char buf[MAXBUF];
+    uint8_t flag;
+    /* if socket disconnects suddenly, close and remove from table */ 
+    if ((read = recv(entry_ptr->socketNum, buf, MAXBUF, 3)) <= 0) {
+	table_delete(table_header->table, table_header->entry_size, entry_ptr->socketNum);
+	close(entry_ptr->socketNum);
+	printf("closed\n");
+    }
+    else {
+        /* START UP HERE */
+    }
+
 }
 
 /* Mainly a debugging function */
