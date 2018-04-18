@@ -31,7 +31,6 @@ struct Table_Header{
 
 struct Entry{
     uint8_t socketNum;
-    int index;
     char handle[HANDLEBUF];
 };
 
@@ -40,11 +39,12 @@ int checkArgs(int argc, char *argv[]);
 void server_operation(int serverSocket);
 void initialize_table(struct Table_Header *table_header, int numEntries);
 int build_fdset(fd_set *fd_set, int serverSocket, struct Table_Header *table_header);
+void read_sockets(int num_ready, int serverSocket, fd_set *fd_set, struct Table_Header *table_header);
+void print_table(struct Table_Header *table_header);
 
 int main(int argc, char *argv[])
 {
-	int serverSocket = 0;  
-	int clientSocket = 0;   
+	int serverSocket = 0;     
 	int portNumber = 0;
 	
 	portNumber = checkArgs(argc, argv);
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 	server_operation(serverSocket);
 	
 	// wait for client to connect
-	clientSocket = tcpAccept(serverSocket, 0);
+	//clientSocket = tcpAccept(serverSocket, 0);
 	return 0;
 }
 
@@ -103,14 +103,14 @@ void server_operation(int serverSocket) {
     int highest_socketnum;
     struct Table_Header table_header;
     initialize_table(&table_header, DEFAULT_SIZE);
-    highest_socketnum = build_fdset(&fd_set, serverSocket, &table_header);
-    if ((num_ready = select(highest_socketnum+1, &fd_set, NULL, NULL, NULL)) < 0) {
-	perror("select");
-	exit(EXIT_FAILURE);
+    while(1){
+	highest_socketnum = build_fdset(&fd_set, serverSocket, &table_header);
+	if ((num_ready = select(highest_socketnum+1, &fd_set, NULL, NULL, NULL)) < 0) {
+	    perror("select");
+	    exit(EXIT_FAILURE);
+	}
+	read_sockets(num_ready, serverSocket, &fd_set, &table_header);
     }
-    printf("got here\n");
-    
-
 }
 
 int build_fdset(fd_set *fd_set, int serverSocket, struct Table_Header *table_header) {
@@ -130,4 +130,46 @@ int build_fdset(fd_set *fd_set, int serverSocket, struct Table_Header *table_hea
 	}
     }
     return highest_socketnum;
+}
+
+void read_sockets(int num_ready, int serverSocket, fd_set *fd_set, struct Table_Header *table_header) {
+    struct Entry entry;
+    struct Entry *entry_ptr;
+    int i;
+    int j;
+    if (FD_ISSET(serverSocket, fd_set)) {
+	/* accept client and register their socket as in use */
+        entry.socketNum = tcpAccept(serverSocket, 0);
+	if (table_header->max_entries <= entry.socketNum) {
+	    table_header->table = realloc_table(table_header->table, table_header->max_entries,
+					        table_header->max_entries * 2, table_header->entry_size);
+	    table_header->max_entries *= 2;
+	}
+	memcpy(entry.handle, "Temp", 5);
+	table_insert(table_header->table, &entry, table_header->entry_size, entry.socketNum);
+	num_ready--;
+    }
+    for (i = 0; i < num_ready; i++) {
+	for (j = 0; j < table_header->max_entries; j++) {
+	    entry_ptr = (struct Entry*)table_fetch(table_header->table, table_header->entry_size, j);
+	    /* check if the location had a valid entry */
+	    if (*((uint8_t *)entry_ptr) != 0) 
+	        if (FD_ISSET(entry_ptr->socketNum, fd_set)) {
+		    /* handle client message */
+		}
+	}
+    }
+    print_table(table_header);
+}
+
+/* Mainly a debugging function */
+void print_table(struct Table_Header *table_header) {
+    int i;
+    struct Entry *entry;
+    for (i = 0; i < table_header->max_entries; i++) {
+	entry = (struct Entry*)table_fetch(table_header->table, table_header->entry_size, i);
+	/* check if the location had a valid entry */
+	if (*((uint8_t *)entry) != 0) 
+	    printf("Handle: %s\t\t\t Socket: %d\n", entry->handle, entry->socketNum);
+    }
 }
