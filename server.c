@@ -169,9 +169,9 @@ void process_data(int socketNum, struct Table_Header *table_header){
     char buf[MAXBUF];
     uint8_t flag;
     /* if socket disconnects suddenly, close and remove from table */ 
-    if ((read = recv(entry_ptr->socketNum, buf, MAXBUF, 3)) <= 0) {
-	table_delete(table_header->table, table_header->entry_size, entry_ptr->socketNum);
-	close(entry_ptr->socketNum);
+    if ((read = recv(socketNum, buf, MAXBUF, 3)) <= 0) {
+	table_delete(table_header->table, table_header->entry_size, socketNum);
+	close(socketNum);
 	printf("closed\n");
     }
     else {
