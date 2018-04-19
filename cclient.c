@@ -17,6 +17,7 @@
 #include <inttypes.h>
 
 #include "networks.h"
+#include "packet_writer.h"
 
 #define MAXBUF 1024
 #define xstr(a) str(a)
@@ -27,6 +28,8 @@ void checkArgs(int argc, char * argv[]);
 int initialize_connection(int argc, char * argv[]);
 int wait_for_input(int socketNum);
 void build_fdset(fd_set *fd_set, int socketNum);
+int read_stdin();
+int read_packet();
 
 int main(int argc, char * argv[]) {
     int socketNum;
@@ -80,12 +83,10 @@ int wait_for_input(int socketNum) {
 	exit(EXIT_FAILURE);
     }
     if (FD_ISSET(socketNum, &fd_set)) {
-	printf("0");
+	return read_packet();
     }
     else if (FD_ISSET(STDIN_FILENO, &fd_set)) {
-	printf("stdin\n");
-	while ((getchar()) != '\n');
-	return 0;
+        return read_stdin();
     }
     return 1;	
 }
@@ -94,4 +95,12 @@ void build_fdset(fd_set *fd_set, int socketNum) {
     FD_ZERO(fd_set);
     FD_SET(socketNum, fd_set);
     FD_SET(STDIN_FILENO, fd_set);
+}
+
+int read_packet() {
+    return 0;
+}
+
+int read_stdin() {
+    return 0;
 }

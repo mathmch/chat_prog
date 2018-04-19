@@ -19,11 +19,11 @@ all:  $(FILE) cclient$(FILE) server$(FILE)
 	# assumes you are doing most of your development on 64 bit machines
 	rm -f *.o
 	
-cclient$(FILE): cclient.c networks.o gethostbyname6.o
-	$(CC) $(CFLAGS) -o cclient$(FILE) cclient.c networks.o gethostbyname6.o $(LIBS)
+cclient$(FILE): cclient.c networks.o gethostbyname6.o packet_writer.o
+	$(CC) $(CFLAGS) -o cclient$(FILE) cclient.c networks.o gethostbyname6.o packet_writer.o$(LIBS)
 
-server$(FILE): server.c networks.o gethostbyname6.o arraylist.o
-	$(CC) $(CFLAGS) -o server$(FILE) server.c networks.o gethostbyname6.o arraylist.o $(LIBS)
+server$(FILE): server.c networks.o gethostbyname6.o arraylist.o packet_writer.o
+	$(CC) $(CFLAGS) -o server$(FILE) server.c networks.o gethostbyname6.o arraylist.o packet_writer.o$(LIBS)
 
 .c.o:
 	gcc -c $(CFLAGS) $< -o $@ $(LIBS)

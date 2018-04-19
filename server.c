@@ -17,6 +17,7 @@
 
 #include "networks.h"
 #include "arraylist.h"
+#include "packet_writer.h"
 
 #define MAXBUF 1024
 #define HANDLEBUF 100
