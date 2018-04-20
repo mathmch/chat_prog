@@ -124,10 +124,9 @@ void build_fdset(fd_set *fd_set, int socketNum) {
 int read_packet(int socketNum) {
     int read;
     char buf[MAXBUF];
-    if ((read = recv(socketNum, buf, MAXBUF, 3)) <= 0) {
-	printf("%d", read);
+    if ((read = recv(socketNum, buf, MAXBUF, MSG_WAITALL)) <= 0) {
 	close(socketNum);
-	printf("closed\n");
+        perror("socket");
     }
     else
 	printf("else\n");
