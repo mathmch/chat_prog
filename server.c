@@ -18,6 +18,7 @@
 #include "networks.h"
 #include "arraylist.h"
 #include "packet_writer.h"
+#include "recieve.h"
 
 #define MAXBUF 1400
 #define HANDLEBUF 100
@@ -167,17 +168,15 @@ void read_sockets(int num_ready, int serverSocket, fd_set *fd_set, struct Table_
 
 void process_data(int socketNum, struct Table_Header *table_header){
     int read;
-    char buf[MAXBUF];
+    uint8_t *packet;
     uint8_t flag;
     /* if socket disconnects suddenly, close and remove from table */ 
-    if ((read = recv(socketNum, buf, MAXBUF, MSG_WAITALL)) <= 0) {
-	perror("socket");
+    if (NULL == (packet = recieve_packet(socketNum))) {
 	table_delete(table_header->table, table_header->entry_size, socketNum);
-	close(socketNum);
 	printf("closed\n");
     }
     else {
-        printf("%s\n", buf);
+        printf("%s\n", packet);
     }
 
 }

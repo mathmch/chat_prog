@@ -19,10 +19,9 @@
 
 #include "networks.h"
 #include "packet_writer.h"
+#include "recieve.h"
 
 #define MAXBUF 1400
-#define xstr(a) str(a)
-#define str(a) #a
 #define MAXHANDLE 100
 #define LOCAL 1
 #define MAX_HANDLES 9
@@ -123,13 +122,8 @@ void build_fdset(fd_set *fd_set, int socketNum) {
 
 int read_packet(int socketNum) {
     int read;
-    char buf[MAXBUF];
-    if ((read = recv(socketNum, buf, MAXBUF, MSG_WAITALL)) <= 0) {
-	close(socketNum);
-        perror("socket");
-    }
-    else
-	printf("else\n");
+    uint8_t *packet;
+    packet = recieve_packet(socketNum);
     return 0;
 }
 
