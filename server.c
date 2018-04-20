@@ -19,7 +19,7 @@
 #include "arraylist.h"
 #include "packet_writer.h"
 
-#define MAXBUF 1024
+#define MAXBUF 1400
 #define HANDLEBUF 100
 #define DEFAULT_SIZE 20
 
@@ -171,6 +171,7 @@ void process_data(int socketNum, struct Table_Header *table_header){
     uint8_t flag;
     /* if socket disconnects suddenly, close and remove from table */ 
     if ((read = recv(socketNum, buf, MAXBUF, 3)) <= 0) {
+	printf("%d", read);
 	table_delete(table_header->table, table_header->entry_size, socketNum);
 	close(socketNum);
 	printf("closed\n");
