@@ -176,7 +176,7 @@ void process_data(int socketNum, struct Table_Header *table_header){
 	printf("closed\n");
     }
     else {
-        /* START UP HERE */
+        printf("%s\n", buf);
     }
 
 }
