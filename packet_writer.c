@@ -112,10 +112,10 @@ uint8_t *write_packet(uint8_t flag, uint8_t num_dests, char *handles[],
 	return broadcast_packet(flag, handles[0], message);
     }
     else if (flag == 5) {
-	return message_packet(flag, handles, 1, message);
+	return message_packet(flag, handles, num_dests, message);
     }
     else if (flag == 6) {
-	return message_packet(flag, handles, num_dests, message);
+        ;/* not in use */
     }
     else if (flag == 7) {
 	return handle_packet(flag, handles[0]);
@@ -140,7 +140,8 @@ uint8_t *write_packet(uint8_t flag, uint8_t num_dests, char *handles[],
     }
     else {
 	return NULL;
-    }   
+    }
+    return NULL;
 }
 
 /* debug code 
