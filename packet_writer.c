@@ -142,3 +142,24 @@ uint8_t *write_packet(uint8_t flag, uint8_t num_dests, char *handles[],
 	return NULL;
     }   
 }
+
+/* debug code 
+int main(int argc, char *argv[]) {
+    uint8_t *packet1;
+    uint8_t *packet2;
+    uint8_t *packet3;
+    uint8_t *packet4;
+    uint8_t *packet5;
+    uint8_t *packet6;
+    char message[100];
+    char *stuff[] = {"matt", "handle1", "handle2", "handle3", "handle4"};
+    memcpy(message, "hello world stuff", 18);	
+    packet1 = write_packet(1, 0, stuff, NULL, 0);
+    packet2 = write_packet(2, 0, stuff, NULL, 0);
+    packet3 = write_packet(4, 0, stuff, message, 0);
+    packet4 = write_packet(5, 1, stuff, message, 0);
+    packet5 = write_packet(6, 4, stuff, message, 0);
+    packet6 = write_packet(11, 0, stuff, NULL, 5); 
+    return 0;
+}
+*/

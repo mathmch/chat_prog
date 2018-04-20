@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -15,11 +14,12 @@
 #include <sys/select.h>
 #include <time.h>
 #include <inttypes.h>
+#include <unistd.h>
 
 #include "networks.h"
 #include "packet_writer.h"
 
-#define MAXBUF 1024
+#define MAXBUF 1400
 #define xstr(a) str(a)
 #define str(a) #a
 
@@ -46,7 +46,7 @@ int main(int argc, char * argv[]) {
 void sendToServer(int socketNum) {
     char sendBuf[MAXBUF];   //data buffer
     int sendLen = 0;        //amount of data to send
-    int sent = 0;            //actual amount of data sent/* get the data and send it   */
+    int sent = 0;            //actual amount of data sent
 			
     printf("Enter the data to send: ");
     fgets(sendBuf, MAXBUF, stdin);
@@ -102,5 +102,14 @@ int read_packet() {
 }
 
 int read_stdin() {
+    char buffer[MAXBUF+1];
+    char *delim = " ";
+    char *token;
+    int num_read;
+    if ((num_read = read(STDIN_FILENO, buffer, MAXBUF)) <= 0)
+	return 0;
+    buffer[num_read] = '\0';
+    token = strtok(buffer, delim);
+    printf("%s\n", token);
     return 0;
 }
