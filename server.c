@@ -19,10 +19,18 @@
 #include "arraylist.h"
 #include "packet_writer.h"
 #include "recieve.h"
+#include "sender.h"
 
 #define MAXBUF 1400
 #define HANDLEBUF 100
 #define DEFAULT_SIZE 20
+#define INTRO 1
+#define ACCEPT 2
+#define DECLINE 3
+#define BROADCAST 4
+#define MESSAGE 5
+#define EXIT 8
+#define LIST 10
 
 struct Table_Header{
     int current_entries;
@@ -44,18 +52,18 @@ int build_fdset(fd_set *fd_set, int serverSocket, struct Table_Header *table_hea
 void read_sockets(int num_ready, int serverSocket, fd_set *fd_set, struct Table_Header *table_header);
 void print_table(struct Table_Header *table_header);
 void process_data(int socketNum, struct Table_Header *table_header);
+void determine_packet_type(int socketNum, uint8_t *packet, struct Table_Header *table_header);
+void new_client(int socketNum, uint8_t *packet, struct Table_Header *table_header);
+int search_entry(char *handle, struct Table_Header *table_header);
 
 int main(int argc, char *argv[])
-{
+    {
 	int serverSocket = 0;     
 	int portNumber = 0;
 	
 	portNumber = checkArgs(argc, argv);
 	serverSocket = tcpServerSetup(portNumber);
 	server_operation(serverSocket);
-	
-	// wait for client to connect
-	//clientSocket = tcpAccept(serverSocket, 0);
 	return 0;
 }
 
@@ -167,20 +175,59 @@ void read_sockets(int num_ready, int serverSocket, fd_set *fd_set, struct Table_
 }
 
 void process_data(int socketNum, struct Table_Header *table_header){
-    int read;
     uint8_t *packet;
-    uint8_t flag;
     /* if socket disconnects suddenly, close and remove from table */ 
     if (NULL == (packet = recieve_packet(socketNum))) {
 	table_delete(table_header->table, table_header->entry_size, socketNum);
 	printf("closed\n");
     }
     else {
-        printf("%s\n", packet);
+	determine_packet_type(socketNum, packet, table_header);
     }
-
 }
 
+void determine_packet_type(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
+    uint8_t flag = get_flag(packet);
+    if (flag == INTRO)
+	new_client(socketNum, packet, table_header);
+    else if (flag == BROADCAST)
+	;
+    else if (flag == MESSAGE)
+	;
+    else if (flag == EXIT)
+	;
+    else if (flag == LIST)
+	;
+    else
+	return; 
+}
+
+void new_client(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
+    struct Entry entry;
+    get_sender_handle(packet, entry.handle);
+    entry.socketNum = socketNum;
+    /* header is already in use */
+    if (search_entry(entry.handle, table_header) != -1)
+	safeSend(socketNum, write_packet(DECLINE, 0, NULL, NULL, 0));
+    /* handle is free */
+    else {
+	safeSend(socketNum, write_packet(ACCEPT, 0, NULL, NULL, 0));
+	table_insert(table_header->table, &entry, table_header->entry_size, entry.socketNum);
+    }
+}
+
+/* returns the socket num of matching entry or -1 if no matches */
+int search_entry(char *handle, struct Table_Header *table_header) {
+    int i;
+    struct Entry *entry;
+    for (i = 0; i < table_header->max_entries; i++) {
+	entry = table_fetch(table_header->table, table_header->entry_size, i);
+	/* matching entries */
+	if (strcmp(handle, entry->handle) == 0)
+	    return entry->socketNum;
+    }
+    return -1;
+}
 /* Mainly a debugging function */
 void print_table(struct Table_Header *table_header) {
     int i;
