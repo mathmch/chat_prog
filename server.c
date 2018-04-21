@@ -207,13 +207,17 @@ void new_client(int socketNum, uint8_t *packet, struct Table_Header *table_heade
     get_sender_handle(packet, entry.handle);
     entry.socketNum = socketNum;
     /* header is already in use */
-    if (search_entry(entry.handle, table_header) != -1)
+    if (search_entry(entry.handle, table_header) != -1){
 	safeSend(socketNum, write_packet(DECLINE, 0, NULL, NULL, 0));
+	table_delete(table_header->table, table_header->entry_size, socketNum);
+	close(socketNum);
+    }
     /* handle is free */
     else {
 	safeSend(socketNum, write_packet(ACCEPT, 0, NULL, NULL, 0));
 	table_insert(table_header->table, &entry, table_header->entry_size, entry.socketNum);
     }
+    print_table(table_header);
 }
 
 /* returns the socket num of matching entry or -1 if no matches */
