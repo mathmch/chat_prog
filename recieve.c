@@ -33,7 +33,7 @@ uint16_t get_length(uint8_t *packet);
 uint8_t get_flag(uint8_t *packet);
 void get_sender_handle(uint8_t *packet, char *handle);
 uint8_t get_num_dests(uint8_t *packet);
-void get_dest_handles(uint8_t *packet, uint8_t num_dests, char dest_handles[][MAXHANDLE]);
+void get_dest_handles(uint8_t *packet, uint8_t num_dests, char *dest_handles[MAX_HANDLES]);
 void get_message(uint8_t *packet, uint8_t flag, char *message);
 
 uint8_t *recieve_packet(int socketNum) {
@@ -83,8 +83,8 @@ uint8_t get_num_dests(uint8_t *packet) {
     num_handles = *(packet + SHORT + BYTE*2 + sender_handle_len);
     return num_handles;
 }
-
-void get_dest_handles(uint8_t *packet, uint8_t num_dests, char dest_handles[][MAXHANDLE]) {
+/* this call is destructive to the packet, make a copy of it before using */
+void get_dest_handles(uint8_t *packet, uint8_t num_dests, char *dest_handles[MAX_HANDLES + 1]) {
     int sender_handle_len;
     int handles_offset;
     uint8_t dest_handle_len;
@@ -92,11 +92,12 @@ void get_dest_handles(uint8_t *packet, uint8_t num_dests, char dest_handles[][MA
     char sender_handle[MAXHANDLE];
     get_sender_handle(packet, sender_handle);
     sender_handle_len = strlen(sender_handle);
+    dest_handles[0] = sender_handle;
     handles_offset = SHORT + BYTE*2 + sender_handle_len + BYTE;
     for (i = 0; i < num_dests; i++) {
 	dest_handle_len = *(packet + handles_offset);
-	memcpy(dest_handles[i], packet + handles_offset + BYTE, dest_handle_len);
-	dest_handles[i][dest_handle_len] = '\0';
+	dest_handles[i+1] = packet + handles_offset + BYTE;
+	dest_handles[i+1][dest_handle_len] = '\0';
 	handles_offset += BYTE + dest_handle_len; 	    
     }
 }

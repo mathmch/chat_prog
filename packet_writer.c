@@ -6,6 +6,8 @@
 #include <arpa/inet.h>
 
 #define BASIC_LENGTH 3
+#define MAXHANDLE 100
+#define MAX_HANDLES 9
 #define MAX_LENGTH 1200
 #define INT 4
 #define SHORT 2
@@ -97,7 +99,7 @@ uint8_t *count_packet(uint8_t flag, uint32_t known_handles) {
     return packet;
 }
 
-uint8_t *write_packet(uint8_t flag, uint8_t num_dests, char *handles[],
+uint8_t *write_packet(uint8_t flag, uint8_t num_dests, char *handles[MAX_HANDLES +1],
 		      char *message, uint32_t known_handles) {
     if (flag == 1) {
 	return handle_packet(flag, handles[0]);
@@ -118,7 +120,7 @@ uint8_t *write_packet(uint8_t flag, uint8_t num_dests, char *handles[],
         ;/* not in use */
     }
     else if (flag == 7) {
-	return handle_packet(flag, handles[0]);
+	return handle_packet(flag, handles[1]);
     }
     else if (flag == 8) {
 	return basic_packet(flag);
@@ -133,7 +135,7 @@ uint8_t *write_packet(uint8_t flag, uint8_t num_dests, char *handles[],
 	return count_packet(flag, known_handles);
     }
     else if (flag == 12) {
-	return handle_packet(flag, handles[0]);
+	return handle_packet(flag, handles[1]);
     }
     else if (flag == 13) {
 	return basic_packet(flag);

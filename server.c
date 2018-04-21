@@ -213,18 +213,16 @@ void forward_broadcast(int socketNum, uint8_t *packet, struct Table_Header *tabl
 void forward_message(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
     int i;
     int forwardSocket;
-    char sender[MAXHANDLE];
     uint8_t num_dests = get_num_dests(packet);
-    char dest_handles[MAX_HANDLES][HANDLEBUF];
+    char *dest_handles[MAX_HANDLES + 1];
     uint8_t original_packet[MAXBUF];
     /* make a copy of the packet */
     memcpy(original_packet, packet, get_length(packet));
-    get_sender_handle(packet, sender);
     get_dest_handles(packet, num_dests, dest_handles);
     for(i = 0; i < num_dests; i++) {
 	/* couldn't find a destination */
-        if (-1 == (forwardSocket = search_entry(dest_handles[i], table_header))) {
-	    safeSend(socketNum, write_packet(UNKNOWN_HANDLE, 0, &sender, NULL, 0));
+        if (-1 == (forwardSocket = search_entry(dest_handles[i+1], table_header))) {
+	    safeSend(socketNum, write_packet(UNKNOWN_HANDLE, 0, dest_handles, NULL, 0));
 	}
 	else {
 	    safeSend(forwardSocket, original_packet);
