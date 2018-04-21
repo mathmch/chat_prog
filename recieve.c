@@ -32,6 +32,8 @@ uint8_t *recieve_packet(int socketNum);
 uint16_t get_length(uint8_t *packet);
 uint8_t get_flag(uint8_t *packet);
 void get_sender_handle(uint8_t *packet, char *handle);
+uint8_t get_num_dests(uint8_t *packet);
+void get_dest_handles(uint8_t *packet, uint8_t num_dests, char dest_handles[][MAXHANDLE]);
 
 uint8_t *recieve_packet(int socketNum) {
     int read;
@@ -70,4 +72,30 @@ void get_sender_handle(uint8_t *packet, char *handle) {
     for (i = 0; i < handle_len; i++) 
 	handle[i] = packet[SHORT + BYTE*2 + i];
     handle[handle_len] = '\0';
+}
+uint8_t get_num_dests(uint8_t *packet) {
+    uint8_t num_handles;
+    int sender_handle_len;
+    char sender_handle[MAXHANDLE];
+    get_sender_handle(packet, sender_handle);
+    sender_handle_len = strlen(sender_handle);
+    num_handles = *(packet + SHORT + BYTE*2 + sender_handle_len);
+    return num_handles;
+}
+
+void get_dest_handles(uint8_t *packet, uint8_t num_dests, char dest_handles[][MAXHANDLE]) {
+    int sender_handle_len;
+    int handles_offset;
+    uint8_t dest_handle_len;
+    int i;
+    char sender_handle[MAXHANDLE];
+    get_sender_handle(packet, sender_handle);
+    sender_handle_len = strlen(sender_handle);
+    handles_offset = SHORT + BYTE*2 + sender_handle_len + BYTE;
+    for (i = 0; i < num_dests; i++) {
+	dest_handle_len = *(packet + handles_offset);
+	memcpy(dest_handles[i], packet + handles_offset + BYTE, dest_handle_len);
+	dest_handles[i][dest_handle_len] = '\0';
+	handles_offset += BYTE + dest_handle_len; 	    
+    }
 }

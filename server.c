@@ -23,6 +23,7 @@
 
 #define MAXBUF 1400
 #define HANDLEBUF 100
+#define MAX_HANDLES 9
 #define DEFAULT_SIZE 20
 #define INTRO 1
 #define ACCEPT 2
@@ -54,6 +55,10 @@ void print_table(struct Table_Header *table_header);
 void process_data(int socketNum, struct Table_Header *table_header);
 void determine_packet_type(int socketNum, uint8_t *packet, struct Table_Header *table_header);
 void new_client(int socketNum, uint8_t *packet, struct Table_Header *table_header);
+void forward_broadcast(int socketNum, uint8_t *packet, struct Table_Header *table_header);
+void forward_message(int socketNum, uint8_t *packet, struct Table_Header *table_header);
+void approve_disconnect(int socketNum, uint8_t *packet, struct Table_Header *table_header);
+void send_list(int socketNum, uint8_t *packet, struct Table_Header *table_header);
 int search_entry(char *handle, struct Table_Header *table_header);
 
 int main(int argc, char *argv[])
@@ -191,15 +196,15 @@ void determine_packet_type(int socketNum, uint8_t *packet, struct Table_Header *
     if (flag == INTRO)
 	new_client(socketNum, packet, table_header);
     else if (flag == BROADCAST)
-	;
+	forward_broadcast(socketNum, packet, table_header);
     else if (flag == MESSAGE)
-	;
+	forward_message(socketNum, packet, table_header);
     else if (flag == EXIT)
-	;
+	approve_disconnect(socketNum, packet, table_header);
     else if (flag == LIST)
-	;
+	send_list(socketNum, packet, table_header);
     else
-	return; 
+	return; /* invalid packet */
 }
 
 void new_client(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
@@ -218,6 +223,27 @@ void new_client(int socketNum, uint8_t *packet, struct Table_Header *table_heade
 	table_insert(table_header->table, &entry, table_header->entry_size, entry.socketNum);
     }
     print_table(table_header);
+}
+
+void forward_broadcast(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
+
+}
+
+void forward_message(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
+    int i;
+    uint8_t num_dests = get_num_dests(packet);
+    char dest_handles[MAX_HANDLES][HANDLEBUF];
+    get_dest_handles(packet, num_dests, dest_handles);
+    for(i = 0; i < num_dests; i++)
+	printf("%s\n", dest_handles[i]);
+}
+
+void approve_disconnect(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
+
+}
+
+void send_list(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
+
 }
 
 /* returns the socket num of matching entry or -1 if no matches */
