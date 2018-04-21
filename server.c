@@ -73,38 +73,19 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-void recvFromClient(int clientSocket)
-{
-	char buf[MAXBUF];
-	int messageLen = 0;
-	
-	//now get the data from the client_socket
-	if ((messageLen = recv(clientSocket, buf, MAXBUF, 0)) < 0)
-	{
-		perror("recv call");
-		exit(-1);
-	}
-
-	printf("Message received, length: %d Data: %s\n", messageLen, buf);
-}
-
-int checkArgs(int argc, char *argv[])
-{
-	// Checks args and returns port number
-	int portNumber = 0;
-
-	if (argc > 2)
-	{
-		fprintf(stderr, "Usage %s [optional port number]\n", argv[0]);
-		exit(EXIT_FAILURE);
-	}
-	
-	if (argc == 2)
-	{
-		portNumber = atoi(argv[1]);
-	}
-	
-	return portNumber;
+int checkArgs(int argc, char *argv[]) {
+    // Checks args and returns port number
+    int portNumber = 0;
+    
+    if (argc > 2) {
+	fprintf(stderr, "Usage %s [optional port number]\n", argv[0]);
+	exit(EXIT_FAILURE);
+    }
+    if (argc == 2) {
+	portNumber = atoi(argv[1]);
+    }
+    
+    return portNumber;
 }
 
 void initialize_table(struct Table_Header *table_header, int numEntries) {
@@ -243,7 +224,7 @@ void forward_message(int socketNum, uint8_t *packet, struct Table_Header *table_
     for(i = 0; i < num_dests; i++) {
 	/* couldn't find a destination */
         if (-1 == (forwardSocket = search_entry(dest_handles[i], table_header))) {
-	    safeSend(socketNum, write_packet(UNKNOWN_HANDLE, 0, (char **)&sender, NULL, 0));
+	    safeSend(socketNum, write_packet(UNKNOWN_HANDLE, 0, &sender, NULL, 0));
 	}
 	else {
 	    safeSend(forwardSocket, original_packet);

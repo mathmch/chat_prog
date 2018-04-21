@@ -24,6 +24,7 @@
 
 #define MAXBUF 1400
 #define MAXHANDLE 100
+#define MAXMESSAGE 200
 #define MAX_HANDLES 9
 #define REQUEST 1
 #define ACCEPT 2
@@ -118,6 +119,8 @@ void build_fdset(fd_set *fd_set, int socketNum, int init) {
 int read_packet(int socketNum) {
     uint8_t flag;
     uint8_t *packet;
+    char message[MAXMESSAGE];
+    char sender[MAXHANDLE];
     packet = recieve_packet(socketNum);
     flag = get_flag(packet);
     if (flag == ACCEPT)
@@ -129,8 +132,11 @@ int read_packet(int socketNum) {
     }
     else if (flag == BROADCAST) 
 	;
-    else if (flag == MESSAGE)
-	;
+    else if (flag == MESSAGE) {
+	get_message(packet, MESSAGE, message);
+	get_sender_handle(packet, sender);
+	printf("\n%s: %s", sender, message);
+	       }
     else if (flag == UNKNOWN_HANDLE)
 	;
     else if (flag == EXIT_OK)
@@ -180,10 +186,12 @@ int message_command(char *command, int socketNum) {
     int i;
     char *delim = " ";
     token = strtok(command, delim);
+    /* get the number of destinations, if provided */
     if (isdigit(*token) && strlen(token) == 1) {
 	num_handles = strtol(token, NULL, 10);
 	token = strtok(NULL, delim);
     }
+    handles[0] = user_name;
     for (i = 0; i < num_handles; i++) {
 	handles[i+1] = token;
         if (verify_handle(token) == -2) {
