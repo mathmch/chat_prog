@@ -30,6 +30,7 @@
 #define DECLINE 3
 #define BROADCAST 4
 #define MESSAGE 5
+#define UNKNOWN_HANDLE 7
 #define EXIT 8
 #define LIST 10
 
@@ -222,7 +223,6 @@ void new_client(int socketNum, uint8_t *packet, struct Table_Header *table_heade
 	safeSend(socketNum, write_packet(ACCEPT, 0, NULL, NULL, 0));
 	table_insert(table_header->table, &entry, table_header->entry_size, entry.socketNum);
     }
-    print_table(table_header);
 }
 
 void forward_broadcast(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
@@ -231,11 +231,24 @@ void forward_broadcast(int socketNum, uint8_t *packet, struct Table_Header *tabl
 
 void forward_message(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
     int i;
+    int forwardSocket;
+    char sender[MAXHANDLE];
     uint8_t num_dests = get_num_dests(packet);
     char dest_handles[MAX_HANDLES][HANDLEBUF];
+    uint8_t original_packet[MAXBUF];
+    /* make a copy of the packet */
+    memcpy(original_packet, packet, get_length(packet));
+    get_sender_handle(packet, sender);
     get_dest_handles(packet, num_dests, dest_handles);
-    for(i = 0; i < num_dests; i++)
-	printf("%s\n", dest_handles[i]);
+    for(i = 0; i < num_dests; i++) {
+	/* couldn't find a destination */
+        if (-1 == (forwardSocket = search_entry(dest_handles[i], table_header))) {
+	    safeSend(socketNum, write_packet(UNKNOWN_HANDLE, 0, (char **)&sender, NULL, 0));
+	}
+	else {
+	    safeSend(forwardSocket, original_packet);
+	}
+    }
 }
 
 void approve_disconnect(int socketNum, uint8_t *packet, struct Table_Header *table_header) {

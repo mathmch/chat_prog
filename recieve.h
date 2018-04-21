@@ -14,4 +14,6 @@ uint8_t get_num_dests(uint8_t *packet);
 
 void get_dest_handles(uint8_t *packet, uint8_t num_dests, char dest_handles[][MAXHANDLE]);
 
+char *get_message(uint8_t *packet, uint8_t flag, char *message);
+    
 #endif

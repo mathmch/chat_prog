@@ -34,6 +34,7 @@ uint8_t get_flag(uint8_t *packet);
 void get_sender_handle(uint8_t *packet, char *handle);
 uint8_t get_num_dests(uint8_t *packet);
 void get_dest_handles(uint8_t *packet, uint8_t num_dests, char dest_handles[][MAXHANDLE]);
+void get_message(uint8_t *packet, uint8_t flag, char *message);
 
 uint8_t *recieve_packet(int socketNum) {
     int read;
@@ -99,3 +100,27 @@ void get_dest_handles(uint8_t *packet, uint8_t num_dests, char dest_handles[][MA
 	handles_offset += BYTE + dest_handle_len; 	    
     }
 }
+/* type = 4 broadcast, else standard */
+void get_message(uint8_t *packet, uint8_t flag, char *message) {
+    uint8_t sender_handle_len;
+    int handles_offset;
+    uint8_t dest_handle_len;
+    uint8_t num_dests;
+    uint8_t packet_len = get_length(packet);
+    int i;
+    sender_handle_len = *(packet + SHORT + BYTE);
+    if (flag == BROADCAST){
+	memcpy(message, packet + SHORT + BYTE*2 + sender_handle_len, packet_len - (SHORT + BYTE*2 + sender_handle_len));
+	message[packet_len - (SHORT + BYTE*2 + sender_handle_len)] = '\0';
+	return;
+    }
+    num_dests = get_num_dests(packet);
+    handles_offset = SHORT + BYTE*2 + sender_handle_len + BYTE;
+    for (i = 0; i < num_dests; i++) {
+	dest_handle_len = *(packet + handles_offset);
+	handles_offset += BYTE + dest_handle_len; 	    
+    }
+    memcpy(message, packet + handles_offset, packet_len - handles_offset);
+    message[packet_len - handles_offset] = '\0';
+}
+

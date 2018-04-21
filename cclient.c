@@ -44,12 +44,12 @@ void checkArgs(int argc, char * argv[]);
 int initialize_connection(int argc, char * argv[]);
 int wait_for_input(int socketNum, int init);
 void build_fdset(fd_set *fd_set, int socketNum, int init);
-int read_stdin();
+int read_stdin(int socketNum);
 int read_packet(int socketNum);
-int message_command(char *command);
-int broadcast_command(char *command);
-int list_command(char *command);
-int exit_command(char *command);
+int message_command(char *command, int socketNum);
+int broadcast_command(char *command, int socketNum);
+int list_command(char *command, int socketNum);
+int exit_command(char *command, int socketNum);
 int verify_handle(char *handle);
 
 char *user_name = NULL;
@@ -102,7 +102,7 @@ int wait_for_input(int socketNum, int init) {
 	return read_packet(socketNum);
     }
     else if (FD_ISSET(STDIN_FILENO, &fd_set)) {
-        return read_stdin();
+        return read_stdin(socketNum);
     }
     return 1;	
 }
@@ -144,7 +144,7 @@ int read_packet(int socketNum) {
     return 0;
 }
 
-int read_stdin() {
+int read_stdin(int socketNum) {
     char buffer[MAXBUF+1];
     char *delim = " ";
     char *token;
@@ -160,19 +160,19 @@ int read_stdin() {
 	token[i] = tolower(token[i]);
     }
     if (strcmp(token, "%m") == 0)
-        return message_command(buffer + 3);
+        return message_command(buffer + 3, socketNum);
     else if (strcmp(token, "%b") == 0)
-	return broadcast_command(buffer + 3);
+	return broadcast_command(buffer + 3, socketNum);
     else if (strcmp(token, "%l") == 0)
-	return list_command(buffer + 3);
+	return list_command(buffer + 3, socketNum);
     else if (strcmp(token, "%e") == 0)
-	return exit_command(buffer + 3);
+	return exit_command(buffer + 3, socketNum);
     else
 	printf("Invalid Command\n");
     return 0;
 }
 
-int message_command(char *command) {
+int message_command(char *command, int socketNum) {
     char *token;
     char *handles[MAX_HANDLES];
     int num_handles = 1;
@@ -198,18 +198,19 @@ int message_command(char *command) {
 	    token = strtok(NULL, delim);
     }
     packet = write_packet(MESSAGE, num_handles, handles, token + strlen(token) + 1, 0);
+    safeSend(socketNum, packet);
     return 0;
 }
 
-int broadcast_command(char *command) {
+int broadcast_command(char *command, int socketNum) {
     return 0;
 }
 
-int list_command(char *command) {
+int list_command(char *command, int socketNum) {
     return 0;
 }
 
-int exit_command(char *command) {
+int exit_command(char *command, int socketNum) {
     return 0;
 }
 
