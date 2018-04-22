@@ -218,15 +218,17 @@ int message_command(char *command, int socketNum) {
     }
     handles[0] = user_name;
     for (i = 0; i < num_handles; i++) {
-	handles[i+1] = token;
-        if (verify_handle(token) == -2) {
+	if (verify_handle(token) == -2) {
 	    printf("Invalid handle, handle starts with a number\n");
-	    return -1;
+	    return 0;
 	}
 	else if (verify_handle(token) == -1) {
 	    printf("Invalid handle, handle longer than 100 characters: %s\n", token);
-	    return -1;
+	    return 0;
 	}
+	handles[i+1] = token;
+	if (handles[i+1][strlen(token)-1] == '\n')
+	    handles[i+1][strlen(token)-1] = '\0';
 	if (i != num_handles-1)
 	    token = strtok(NULL, delim);
     }
@@ -250,7 +252,7 @@ int list_command(int socketNum) {
 int exit_command(int socketNum) {
     uint8_t *packet = write_packet(EXIT, 0, NULL, NULL, 0);
     safeSend(socketNum, packet);
-    return 0;
+    return 1;
 }
 
 void send_message(int socketNum, uint8_t flag, uint8_t num_dests, char *handles[], char *message){

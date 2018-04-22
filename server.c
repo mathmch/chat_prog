@@ -223,8 +223,9 @@ void forward_message(int socketNum, uint8_t *packet, struct Table_Header *table_
     for(i = 0; i < num_dests; i++) {
 	/* couldn't find a destination */
         if (-1 == (forwardSocket = search_entry(dest_handles[i+1], table_header))) {
+	    dest_handles[1] = dest_handles[i+1];
 	    safeSend(socketNum, write_packet(UNKNOWN_HANDLE, 0, dest_handles, NULL, 0));
-	    dest_handles[i+1] = dest_handles[i+2];
+	    
 	}
 	else {
 	    safeSend(forwardSocket, original_packet);
