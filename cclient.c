@@ -40,7 +40,9 @@
 #define LIST_END 13
 #define INIT 0
 #define STANDARD 1
+ 
 
+/* TODO: edge case testing, seg fault on server crash, break up messages */
 void checkArgs(int argc, char * argv[]);
 int initialize_connection(int argc, char * argv[]);
 int wait_for_input(int socketNum, int init);
@@ -120,9 +122,12 @@ int read_packet(int socketNum) {
     uint8_t flag;
     uint8_t *packet;
     char message[MAXMESSAGE];
-    char *dest_handles[MAX_HANDLES + 1];
     char sender[MAXHANDLE];
     packet = recieve_packet(socketNum);
+    if (packet == NULL) {
+	printf("\nServer terminated\n");
+	exit(EXIT_SUCCESS);
+    }
     flag = get_flag(packet);
     if (flag == ACCEPT)
 	return 0;
@@ -144,8 +149,8 @@ int read_packet(int socketNum) {
 	return 0;
     }
     else if (flag == UNKNOWN_HANDLE) {
-	get_dest_handles(packet, get_num_dests(packet), dest_handles);
-	printf("\nClient with handle %s does not exist.\n", dest_handles[0]);
+        get_sender_handle(packet, sender);
+	printf("\nClient with handle %s does not exist.\n", sender);
         return 0;
     }
     else if (flag == EXIT_OK) {
@@ -157,8 +162,8 @@ int read_packet(int socketNum) {
 	return 0;
     }
     else if (flag == LIST_HANDLE) {
-	get_dest_handles(packet, get_num_dests(packet), dest_handles);
-	printf("  %s\n", dest_handles[0]);
+        get_sender_handle(packet, sender);
+	printf("  %s\n", sender);
 	return 0;
     }
     else if (flag == LIST_END)

@@ -88,17 +88,20 @@ void get_dest_handles(uint8_t *packet, uint8_t num_dests, char *dest_handles[MAX
     int sender_handle_len;
     int handles_offset;
     uint8_t dest_handle_len;
+    uint8_t next_handle_len;
     int i;
     char sender_handle[MAXHANDLE];
     get_sender_handle(packet, sender_handle);
     sender_handle_len = strlen(sender_handle);
     dest_handles[0] = sender_handle;
     handles_offset = SHORT + BYTE*2 + sender_handle_len + BYTE;
+    dest_handle_len = *(packet + handles_offset);
     for (i = 0; i < num_dests; i++) {
-	dest_handle_len = *(packet + handles_offset);
-	dest_handles[i+1] = packet + handles_offset + BYTE;
+	dest_handles[i+1] = (char *)(packet + handles_offset + BYTE);
+	next_handle_len = *(packet + handles_offset + BYTE + dest_handle_len);
 	dest_handles[i+1][dest_handle_len] = '\0';
-	handles_offset += BYTE + dest_handle_len; 	    
+	handles_offset += BYTE + dest_handle_len;
+	dest_handle_len = next_handle_len;
     }
 }
 /* type = 4 broadcast, else standard */
