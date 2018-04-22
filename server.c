@@ -214,7 +214,19 @@ void new_client(int socketNum, uint8_t *packet, struct Table_Header *table_heade
 }
 
 void forward_broadcast(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
-
+    char sender[HANDLEBUF];
+    int i;
+    struct Entry *entry;
+    get_sender_handle(packet, sender);
+    for (i = 0; i < table_header->max_entries; i++) {
+	entry  = table_fetch(table_header->table, table_header->entry_size, i);
+	if (entry == NULL || strcmp(sender, entry->handle) == 0)
+	    continue;
+	else {
+	    safeSend(i, packet);
+	}
+	    
+    }
 }
 
 void forward_message(int socketNum, uint8_t *packet, struct Table_Header *table_header) {

@@ -153,7 +153,7 @@ int read_packet(int socketNum) {
 	exit(EXIT_SUCCESS);
     }
     else if (flag == LIST_NUM) {
-	printf("\nNumber of clients: %d\n", 10); //FIX THIS TO READ THIS PACKET!!!!!!!!!
+	printf("\nNumber of clients: %d\n", ntohl(*((uint32_t *)(packet + 3)))); 
 	return 0;
     }
     else if (flag == LIST_HANDLE) {
@@ -175,6 +175,11 @@ int read_stdin(int socketNum) {
     int num_read;
     if ((num_read = read(STDIN_FILENO, buffer, MAXBUF)) <= 0)
 	return 0;
+    if (num_read == MAXBUF) {
+	printf("Message exceeded 1400 characters, not sent.\n");
+	while(getchar() != '\n'); /* flush stdin */ 
+	return 0;
+    }
     buffer[num_read] = '\0';
     token = strtok(buffer, delim);
     len = strlen(token);
@@ -227,7 +232,9 @@ int message_command(char *command, int socketNum) {
 }
 
 int broadcast_command(char *command, int socketNum) {
-    uint8_t *packet = write_packet(BROADCAST, 0, NULL, command, 0);
+    char *handles[1];
+    handles[0] = user_name;
+    uint8_t *packet = write_packet(BROADCAST, 0, handles, command, 0);
     safeSend(socketNum, packet);
     return 0;
 }
