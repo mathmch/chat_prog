@@ -148,6 +148,7 @@ void read_sockets(int num_ready, int serverSocket, fd_set *fd_set, struct Table_
     }
 }
 
+/* determine if the data is real or simply from a socket close */
 void process_data(int socketNum, struct Table_Header *table_header){
     uint8_t *packet;
     /* if socket disconnects suddenly, close and remove from table */ 
@@ -177,6 +178,7 @@ void determine_packet_type(int socketNum, uint8_t *packet, struct Table_Header *
 	return; /* invalid packet */
 }
 
+/* handle a new client requesting a handle */
 void new_client(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
     struct Entry entry;
     get_sender_handle(packet, entry.handle);
@@ -195,6 +197,7 @@ void new_client(int socketNum, uint8_t *packet, struct Table_Header *table_heade
     }
 }
 
+/* send a broadcast packet to all known clients except the sender */
 void forward_broadcast(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
     char sender[MAXHANDLE];
     int i;
@@ -211,6 +214,7 @@ void forward_broadcast(int socketNum, uint8_t *packet, struct Table_Header *tabl
     }
 }
 
+/* forward message to destinations, respond to send if a destination does not exist */
 void forward_message(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
     int i;
     int forwardSocket;
@@ -243,6 +247,7 @@ void approve_disconnect(int socketNum, struct Table_Header *table_header) {
     table_header->current_entries--;
 }
 
+/* sends a flag = 10, then a flag = 11 for each client, then a flag = 12 to finish the list */
 void send_list(int socketNum, struct Table_Header *table_header) {
     int i;
     char *handles[1];

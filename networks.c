@@ -61,7 +61,7 @@ int tcpServerSetup(int portNumber)
 		exit(-1);
 	}
 	
-	printf("Server Port Number %d \n", ntohs(server.sin6_port));
+	printf("Server is using port %d \n", ntohs(server.sin6_port));
 	
 	return server_socket;
 }

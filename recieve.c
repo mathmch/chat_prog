@@ -27,6 +27,7 @@ uint8_t get_num_dests(uint8_t *packet);
 void get_dest_handles(uint8_t *packet, uint8_t num_dests, char *dest_handles[MAX_HANDLES]);
 void get_message(uint8_t *packet, uint8_t flag, char *message);
 
+/* reads a packet from ready socket */
 uint8_t *recieve_packet(int socketNum) {
     int read;
     int packet_length;
@@ -47,17 +48,20 @@ uint8_t *recieve_packet(int socketNum) {
     return buf;
 }
 
+/* gets the packet length from a packet */
 uint16_t get_length(uint8_t *packet) {
     uint16_t packet_length;
     packet_length = ntohs(*(uint16_t *)packet);
     return packet_length;
 }
 
+/* gets the flag number from a packet */
 uint8_t get_flag(uint8_t *packet) {
     uint8_t flag = *(packet + SHORT);
     return flag;
 }
 
+/* gets the first handle appearing in packets with handles */
 void get_sender_handle(uint8_t *packet, char *handle) {
     int i;
     uint8_t handle_len = *(packet + SHORT + BYTE);
@@ -65,6 +69,8 @@ void get_sender_handle(uint8_t *packet, char *handle) {
 	handle[i] = packet[SHORT + BYTE*2 + i];
     handle[handle_len] = '\0';
 }
+
+/* gets the number of destinations in a flag = 5 packet */
 uint8_t get_num_dests(uint8_t *packet) {
     uint8_t num_handles;
     int sender_handle_len;
@@ -74,7 +80,9 @@ uint8_t get_num_dests(uint8_t *packet) {
     num_handles = *(packet + SHORT + BYTE*2 + sender_handle_len);
     return num_handles;
 }
-/* this call is destructive to the packet, make a copy of it before using */
+
+/* gets the destination handles from a flag = 5 packet *
+ * this call is destructive to the packet, make a copy of it before using */
 void get_dest_handles(uint8_t *packet, uint8_t num_dests,
 		      char *dest_handles[MAX_HANDLES + 1]) {
     int sender_handle_len;
@@ -96,7 +104,9 @@ void get_dest_handles(uint8_t *packet, uint8_t num_dests,
 	dest_handle_len = next_handle_len;
     }
 }
-/* type = 4 broadcast, else standard */
+
+/* gets the text message from a packet *
+ * type = 4 broadcast, else standard */
 void get_message(uint8_t *packet, uint8_t flag, char *message) {
     uint8_t sender_handle_len;
     int handles_offset;

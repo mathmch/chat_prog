@@ -68,6 +68,7 @@ void checkArgs(int argc, char * argv[]) {
     }
 }
 
+/* establish a connection to the server, secure handle */
 int initialize_connection(int argc, char * argv[]) {
     int socketNum;
     uint8_t *packet;
@@ -101,6 +102,7 @@ int wait_for_input(int socketNum, int init) {
     return 1;	
 }
 
+/* creates the set of open fds for select */
 void build_fdset(fd_set *fd_set, int socketNum, int init) {
     FD_ZERO(fd_set);
     if (init)
@@ -109,6 +111,7 @@ void build_fdset(fd_set *fd_set, int socketNum, int init) {
     
 }
 
+/* reads from the socket to the server */
 int read_packet(int socketNum) {
     uint8_t flag;
     uint8_t *packet;
@@ -167,6 +170,7 @@ int read_packet(int socketNum) {
     return 0;
 }
 
+/* read commands from stdin */
 int read_stdin(int socketNum) {
     char buffer[MAXBUF+1];
     char *delim = " ";
@@ -200,6 +204,7 @@ int read_stdin(int socketNum) {
     return 0;
 }
 
+/* verify and send a message (flag = 5) packet */
 int message_command(char *command, int socketNum) {
     char *token;
     char *handles[MAX_HANDLES + 1];
@@ -236,6 +241,7 @@ int message_command(char *command, int socketNum) {
     return 0;
 }
 
+/* send a broadcast (flag = 4) packet */
 int broadcast_command(char *command, int socketNum) {
     char *handles[1];
     handles[0] = user_name;
@@ -243,24 +249,28 @@ int broadcast_command(char *command, int socketNum) {
     return 0;
 }
 
+/* send a list (flag = 10) request packet */
 int list_command(int socketNum) {
     uint8_t *packet = write_packet(LIST, 0, NULL, NULL, 0);
     safeSend(socketNum, packet);
     return 1;
 }
 
+/* send a exit (flag = 8) request packet */
 int exit_command(int socketNum) {
     uint8_t *packet = write_packet(EXIT, 0, NULL, NULL, 0);
     safeSend(socketNum, packet);
     return 1;
 }
 
+/*ensures message is less than MAXMESSAGE, send multiple packets if needed */
 void send_message(int socketNum, uint8_t flag, uint8_t num_dests, char *handles[], char *message){
     uint8_t *packet;
     int i;
     char message_piece[MAXMESSAGE + 1];
     int message_len = strlen(message);
     int over = message_len/MAXMESSAGE;
+    /* if multiple packets are needed */
     if (over > 0)
 	for (i = 0; i < over + 1; i++) {
 	    if (message_len > MAXMESSAGE) {
@@ -276,6 +286,7 @@ void send_message(int socketNum, uint8_t flag, uint8_t num_dests, char *handles[
 	    packet = write_packet(flag, num_dests, handles, message_piece, 0);
 	    safeSend(socketNum, packet);
 	}
+    /* if only one packet is needed */
     else {
 	packet = write_packet(flag, num_dests, handles, message, 0);
 	safeSend(socketNum, packet);
