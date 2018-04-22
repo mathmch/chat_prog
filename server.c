@@ -230,8 +230,9 @@ void forward_message(int socketNum, uint8_t *packet, struct Table_Header *table_
     }
 }
 
+/* clear entry, send flag = 9, then close socket */
 void approve_disconnect(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
-
+    
 }
 
 void send_list(int socketNum, uint8_t *packet, struct Table_Header *table_header) {

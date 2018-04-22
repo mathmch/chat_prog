@@ -120,6 +120,7 @@ int read_packet(int socketNum) {
     uint8_t flag;
     uint8_t *packet;
     char message[MAXMESSAGE];
+    char *dest_handles[MAX_HANDLES + 1];
     char sender[MAXHANDLE];
     packet = recieve_packet(socketNum);
     flag = get_flag(packet);
@@ -130,23 +131,36 @@ int read_packet(int socketNum) {
 	fflush(stdout);
 	return -1;
     }
-    else if (flag == BROADCAST) 
-	;
+    else if (flag == BROADCAST) {
+	get_message(packet, BROADCAST, message);
+	get_sender_handle(packet, sender);
+	printf("\n%s: %s", sender, message);
+	return 0;
+    }
     else if (flag == MESSAGE) {
 	get_message(packet, MESSAGE, message);
 	get_sender_handle(packet, sender);
 	printf("\n%s: %s", sender, message);
-	       }
-    else if (flag == UNKNOWN_HANDLE)
-	;
+	return 0;
+    }
+    else if (flag == UNKNOWN_HANDLE) {
+	get_dest_handles(packet, get_num_dests(packet), dest_handles);
+	printf("\nClient with handle %s does not exist.\n", dest_handles[0]);
+        return 0;
+    }
     else if (flag == EXIT_OK)
-	;
-    else if (flag == LIST_NUM)
-	;
-    else if (flag == LIST_HANDLE)
-	;
+	exit(EXIT_SUCCESS);
+    else if (flag == LIST_NUM) {
+	printf("\nNumber of clients: %d\n", 10); //FIX THIS TO READ THIS PACKET!!!!!!!!!
+	return 0;
+    }
+    else if (flag == LIST_HANDLE) {
+	get_dest_handles(packet, get_num_dests(packet), dest_handles);
+	printf("  %s\n", dest_handles[0]);
+	return 0;
+    }
     else if (flag == LIST_END)
-	;
+	return 0;
     return 0;
 }
 
