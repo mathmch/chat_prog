@@ -56,6 +56,8 @@ void *table_fetch(uint8_t *table, int entry_size, int index) {
     if (table == NULL)
 	return NULL;
     entry = table + (entry_size * index);
+    if (*((uint8_t *)entry) == '\0')
+	return NULL;
     return entry;
 }
 

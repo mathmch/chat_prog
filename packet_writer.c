@@ -135,14 +135,13 @@ uint8_t *write_packet(uint8_t flag, uint8_t num_dests, char *handles[MAX_HANDLES
 	return count_packet(flag, known_handles);
     }
     else if (flag == 12) {
-	return handle_packet(flag, handles[1]);
+	return handle_packet(flag, handles[0]);
     }
     else if (flag == 13) {
 	return basic_packet(flag);
     }
-    else {
+    else 
 	return NULL;
-    }
     return NULL;
 }
 

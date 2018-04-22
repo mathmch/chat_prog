@@ -49,8 +49,8 @@ int read_stdin(int socketNum);
 int read_packet(int socketNum);
 int message_command(char *command, int socketNum);
 int broadcast_command(char *command, int socketNum);
-int list_command(char *command, int socketNum);
-int exit_command(char *command, int socketNum);
+int list_command(int socketNum);
+int exit_command(int socketNum);
 int verify_handle(char *handle);
 
 char *user_name = NULL;
@@ -148,8 +148,10 @@ int read_packet(int socketNum) {
 	printf("\nClient with handle %s does not exist.\n", dest_handles[0]);
         return 0;
     }
-    else if (flag == EXIT_OK)
+    else if (flag == EXIT_OK) {
+	close(socketNum);
 	exit(EXIT_SUCCESS);
+    }
     else if (flag == LIST_NUM) {
 	printf("\nNumber of clients: %d\n", 10); //FIX THIS TO READ THIS PACKET!!!!!!!!!
 	return 0;
@@ -179,14 +181,14 @@ int read_stdin(int socketNum) {
     for (i = 0; i < len; i++) {
 	token[i] = tolower(token[i]);
     }
-    if (strcmp(token, "%m") == 0)
+    if (strncmp(token, "%m", 2) == 0)
         return message_command(buffer + 3, socketNum);
-    else if (strcmp(token, "%b") == 0)
+    else if (strncmp(token, "%b", 2) == 0)
 	return broadcast_command(buffer + 3, socketNum);
-    else if (strcmp(token, "%l") == 0)
-	return list_command(buffer + 3, socketNum);
-    else if (strcmp(token, "%e") == 0)
-	return exit_command(buffer + 3, socketNum);
+    else if (strncmp(token, "%l", 2) == 0)
+	return list_command(socketNum);
+    else if (strncmp(token, "%e", 2) == 0)
+	return exit_command(socketNum);
     else
 	printf("Invalid Command\n");
     return 0;
@@ -225,14 +227,20 @@ int message_command(char *command, int socketNum) {
 }
 
 int broadcast_command(char *command, int socketNum) {
+    uint8_t *packet = write_packet(BROADCAST, 0, NULL, command, 0);
+    safeSend(socketNum, packet);
     return 0;
 }
 
-int list_command(char *command, int socketNum) {
+int list_command(int socketNum) {
+    uint8_t *packet = write_packet(LIST, 0, NULL, NULL, 0);
+    safeSend(socketNum, packet);
     return 0;
 }
 
-int exit_command(char *command, int socketNum) {
+int exit_command(int socketNum) {
+    uint8_t *packet = write_packet(EXIT, 0, NULL, NULL, 0);
+    safeSend(socketNum, packet);
     return 0;
 }
 

@@ -32,7 +32,11 @@
 #define MESSAGE 5
 #define UNKNOWN_HANDLE 7
 #define EXIT 8
+#define EXIT_OK 9
 #define LIST 10
+#define LIST_NUM 11
+#define LIST_HANDLE 12
+#define LIST_END 13
 
 struct Table_Header{
     int current_entries;
@@ -58,8 +62,8 @@ void determine_packet_type(int socketNum, uint8_t *packet, struct Table_Header *
 void new_client(int socketNum, uint8_t *packet, struct Table_Header *table_header);
 void forward_broadcast(int socketNum, uint8_t *packet, struct Table_Header *table_header);
 void forward_message(int socketNum, uint8_t *packet, struct Table_Header *table_header);
-void approve_disconnect(int socketNum, uint8_t *packet, struct Table_Header *table_header);
-void send_list(int socketNum, uint8_t *packet, struct Table_Header *table_header);
+void approve_disconnect(int socketNum, struct Table_Header *table_header);
+void send_list(int socketNum, struct Table_Header *table_header);
 int search_entry(char *handle, struct Table_Header *table_header);
 
 int main(int argc, char *argv[])
@@ -123,7 +127,7 @@ int build_fdset(fd_set *fd_set, int serverSocket, struct Table_Header *table_hea
     for (i = 0; i < table_header->max_entries; i++) {
 	entry = (struct Entry*)table_fetch(table_header->table, table_header->entry_size, i);
 	/* check if the location had a valid entry */
-	if (*((uint8_t *)entry) != 0) {
+	if (entry != NULL) {
 	    FD_SET(entry->socketNum, fd_set);
 	    if (entry->socketNum > highest_socketnum)
 		highest_socketnum = entry->socketNum;
@@ -154,7 +158,7 @@ void read_sockets(int num_ready, int serverSocket, fd_set *fd_set, struct Table_
 	for (j = 0; j < table_header->max_entries; j++) {
 	    entry_ptr = (struct Entry*)table_fetch(table_header->table, table_header->entry_size, j);
 	    /* check if the location had a valid entry */
-	    if (*((uint8_t *)entry_ptr) != 0 && FD_ISSET(entry_ptr->socketNum, fd_set)) {
+	    if (entry_ptr != NULL && FD_ISSET(entry_ptr->socketNum, fd_set)) {
 		process_data(entry_ptr->socketNum, table_header);
 	    }
 	}
@@ -166,6 +170,8 @@ void process_data(int socketNum, struct Table_Header *table_header){
     /* if socket disconnects suddenly, close and remove from table */ 
     if (NULL == (packet = recieve_packet(socketNum))) {
 	table_delete(table_header->table, table_header->entry_size, socketNum);
+	close(socketNum);
+	table_header->current_entries--;
 	printf("closed\n");
     }
     else {
@@ -182,9 +188,9 @@ void determine_packet_type(int socketNum, uint8_t *packet, struct Table_Header *
     else if (flag == MESSAGE)
 	forward_message(socketNum, packet, table_header);
     else if (flag == EXIT)
-	approve_disconnect(socketNum, packet, table_header);
+	approve_disconnect(socketNum, table_header);
     else if (flag == LIST)
-	send_list(socketNum, packet, table_header);
+	send_list(socketNum, table_header);
     else
 	return; /* invalid packet */
 }
@@ -203,6 +209,7 @@ void new_client(int socketNum, uint8_t *packet, struct Table_Header *table_heade
     else {
 	safeSend(socketNum, write_packet(ACCEPT, 0, NULL, NULL, 0));
 	table_insert(table_header->table, &entry, table_header->entry_size, entry.socketNum);
+	table_header->current_entries++;
     }
 }
 
@@ -231,12 +238,32 @@ void forward_message(int socketNum, uint8_t *packet, struct Table_Header *table_
 }
 
 /* clear entry, send flag = 9, then close socket */
-void approve_disconnect(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
-    
+void approve_disconnect(int socketNum, struct Table_Header *table_header) {
+    uint8_t *packet;
+    table_delete(table_header->table, table_header->entry_size, socketNum);
+    packet = write_packet(EXIT_OK, 0, NULL, NULL, 0);
+    safeSend(socketNum, packet);
+    close(socketNum);
+    table_header->current_entries--;
 }
 
-void send_list(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
-
+void send_list(int socketNum, struct Table_Header *table_header) {
+    int i;
+    char *handles[1];
+    struct Entry *entry;
+    uint8_t *packet = write_packet(LIST_NUM, 0, NULL, NULL, table_header->current_entries);
+    safeSend(socketNum, packet);
+    for (i = 0; i < table_header->max_entries; i++) {
+	entry = table_fetch(table_header->table, table_header->entry_size, i);
+	if (entry == NULL)
+	    continue;
+	else {
+	    handles[0] = (char *)entry->handle;
+	    packet = write_packet(LIST_HANDLE, 0, handles, NULL, 0);
+	    safeSend(socketNum, packet);
+	}
+    }
+    packet = write_packet(LIST_END, 0, NULL, NULL, 0);
 }
 
 /* returns the socket num of matching entry or -1 if no matches */
@@ -245,6 +272,8 @@ int search_entry(char *handle, struct Table_Header *table_header) {
     struct Entry *entry;
     for (i = 0; i < table_header->max_entries; i++) {
 	entry = table_fetch(table_header->table, table_header->entry_size, i);
+	if (entry == NULL)
+	    continue;
 	/* matching entries */
 	if (strcmp(handle, entry->handle) == 0)
 	    return entry->socketNum;
