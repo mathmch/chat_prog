@@ -17,16 +17,7 @@
 #include <ctype.h>
 #include <unistd.h>
 
-#define MAXBUF 1400
-#define MAXHANDLE 100
-#define MAX_HANDLES 9
-#define MESSAGE 5
-#define BROADCAST 4
-#define REQUEST 1
-#define LIST 10
-#define EXIT 8
-#define SHORT 2
-#define BYTE 1
+#include "util.h"
 
 uint8_t *recieve_packet(int socketNum);
 uint16_t get_length(uint8_t *packet);
@@ -84,7 +75,8 @@ uint8_t get_num_dests(uint8_t *packet) {
     return num_handles;
 }
 /* this call is destructive to the packet, make a copy of it before using */
-void get_dest_handles(uint8_t *packet, uint8_t num_dests, char *dest_handles[MAX_HANDLES + 1]) {
+void get_dest_handles(uint8_t *packet, uint8_t num_dests,
+		      char *dest_handles[MAX_HANDLES + 1]) {
     int sender_handle_len;
     int handles_offset;
     uint8_t dest_handle_len;
@@ -114,7 +106,8 @@ void get_message(uint8_t *packet, uint8_t flag, char *message) {
     int i;
     sender_handle_len = *(packet + SHORT + BYTE);
     if (flag == BROADCAST){
-	memcpy(message, packet + SHORT + BYTE*2 + sender_handle_len, packet_len - (SHORT + BYTE*2 + sender_handle_len));
+	safe_memcpy(message, packet + SHORT + BYTE*2 + sender_handle_len,
+		    packet_len - (SHORT + BYTE*2 + sender_handle_len));
 	message[packet_len - (SHORT + BYTE*2 + sender_handle_len)] = '\0';
 	return;
     }
@@ -124,7 +117,7 @@ void get_message(uint8_t *packet, uint8_t flag, char *message) {
 	dest_handle_len = *(packet + handles_offset);
 	handles_offset += BYTE + dest_handle_len; 	    
     }
-    memcpy(message, packet + handles_offset, packet_len - handles_offset);
+    safe_memcpy(message, packet + handles_offset, packet_len - handles_offset);
     message[packet_len - handles_offset] = '\0';
 }
 

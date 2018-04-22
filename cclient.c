@@ -20,29 +20,10 @@
 #include "networks.h"
 #include "packet_writer.h"
 #include "recieve.h"
-#include "sender.h"
+#include "util.h"
 
-#define MAXBUF 1400
-#define MAXHANDLE 100
-#define MAXMESSAGE 200
-#define MAX_HANDLES 9
-#define REQUEST 1
-#define ACCEPT 2
-#define REJECT 3
-#define BROADCAST 4
-#define MESSAGE 5
-#define UNKNOWN_HANDLE 7
-#define EXIT 8
-#define EXIT_OK 9
-#define LIST 10
-#define LIST_NUM 11
-#define LIST_HANDLE 12
-#define LIST_END 13
-#define INIT 0
-#define STANDARD 1
- 
 
-/* TODO: edge case testing, seg fault on server crash, break up messages */
+/* TODO: edge case testing */
 void checkArgs(int argc, char * argv[]);
 int initialize_connection(int argc, char * argv[]);
 int wait_for_input(int socketNum, int init);
@@ -53,17 +34,19 @@ int message_command(char *command, int socketNum);
 int broadcast_command(char *command, int socketNum);
 int list_command(int socketNum);
 int exit_command(int socketNum);
+void send_message(int socketNum, uint8_t flag, uint8_t num_dests, char *handles[], char *message);
 int verify_handle(char *handle);
 
 char *user_name = NULL;
 
 int main(int argc, char * argv[]) {
     int socketNum;
-    int exit = 0;
+    int status = 0;
     socketNum = initialize_connection(argc, argv);
-    while (exit != -1){
-        write(STDOUT_FILENO, "$: ", 3);
-	exit = wait_for_input(socketNum, STANDARD);
+    while (status != -1){
+	if (status == 0)
+	    write(STDOUT_FILENO, "$: ", 3);
+        status = wait_for_input(socketNum, STANDARD);
     }  
     close(socketNum);	
     return 0;
@@ -73,6 +56,14 @@ void checkArgs(int argc, char * argv[]) {
     /* check command line arguments  */
     if (argc != 4) {
 	printf("usage: %s handle host-name port-number \n", argv[0]);
+	exit(EXIT_FAILURE);
+    }
+    if (isdigit(*argv[1])) {
+	printf("Invalid handle, handle starts with a number\n");
+	exit(EXIT_FAILURE);
+    }
+    if (strlen(argv[1]) > MAXHANDLE){
+	printf("Invalid handle, handle longer than 100 characters: %s\n", argv[1]);
 	exit(EXIT_FAILURE);
     }
 }
@@ -125,7 +116,7 @@ int read_packet(int socketNum) {
     char sender[MAXHANDLE];
     packet = recieve_packet(socketNum);
     if (packet == NULL) {
-	printf("\nServer terminated\n");
+	printf("\nServer Terminated\n");
 	exit(EXIT_SUCCESS);
     }
     flag = get_flag(packet);
@@ -140,17 +131,20 @@ int read_packet(int socketNum) {
 	get_message(packet, BROADCAST, message);
 	get_sender_handle(packet, sender);
 	printf("\n%s: %s", sender, message);
+	fflush(stdout);
 	return 0;
     }
     else if (flag == MESSAGE) {
 	get_message(packet, MESSAGE, message);
 	get_sender_handle(packet, sender);
 	printf("\n%s: %s", sender, message);
+	fflush(stdout);
 	return 0;
     }
     else if (flag == UNKNOWN_HANDLE) {
         get_sender_handle(packet, sender);
 	printf("\nClient with handle %s does not exist.\n", sender);
+	fflush(stdout);
         return 0;
     }
     else if (flag == EXIT_OK) {
@@ -158,13 +152,15 @@ int read_packet(int socketNum) {
 	exit(EXIT_SUCCESS);
     }
     else if (flag == LIST_NUM) {
-	printf("\nNumber of clients: %d\n", ntohl(*((uint32_t *)(packet + 3)))); 
-	return 0;
+	printf("Number of clients: %d\n", ntohl(*((uint32_t *)(packet + 3))));
+	fflush(stdout);
+	return 1;
     }
     else if (flag == LIST_HANDLE) {
         get_sender_handle(packet, sender);
 	printf("  %s\n", sender);
-	return 0;
+	fflush(stdout);
+	return 1;
     }
     else if (flag == LIST_END)
 	return 0;
@@ -206,15 +202,18 @@ int read_stdin(int socketNum) {
 
 int message_command(char *command, int socketNum) {
     char *token;
-    char *handles[MAX_HANDLES];
+    char *handles[MAX_HANDLES + 1];
     int num_handles = 1;
-    uint8_t *packet;
     int i;
     char *delim = " ";
     token = strtok(command, delim);
     /* get the number of destinations, if provided */
     if (isdigit(*token) && strlen(token) == 1) {
 	num_handles = strtol(token, NULL, 10);
+	if (num_handles > 9) {
+	    printf("Number of destinations must be less than 9\n");
+	    return 0;
+	}
 	token = strtok(NULL, delim);
     }
     handles[0] = user_name;
@@ -231,29 +230,54 @@ int message_command(char *command, int socketNum) {
 	if (i != num_handles-1)
 	    token = strtok(NULL, delim);
     }
-    packet = write_packet(MESSAGE, num_handles, handles, token + strlen(token) + 1, 0);
-    safeSend(socketNum, packet);
+    send_message(socketNum, MESSAGE, num_handles, handles, token + strlen(token) + 1);
     return 0;
 }
 
 int broadcast_command(char *command, int socketNum) {
     char *handles[1];
     handles[0] = user_name;
-    uint8_t *packet = write_packet(BROADCAST, 0, handles, command, 0);
-    safeSend(socketNum, packet);
+    send_message(socketNum, BROADCAST, 0, handles, command);
     return 0;
 }
 
 int list_command(int socketNum) {
     uint8_t *packet = write_packet(LIST, 0, NULL, NULL, 0);
     safeSend(socketNum, packet);
-    return 0;
+    return 1;
 }
 
 int exit_command(int socketNum) {
     uint8_t *packet = write_packet(EXIT, 0, NULL, NULL, 0);
     safeSend(socketNum, packet);
     return 0;
+}
+
+void send_message(int socketNum, uint8_t flag, uint8_t num_dests, char *handles[], char *message){
+    uint8_t *packet;
+    int i;
+    char message_piece[MAXMESSAGE + 1];
+    int message_len = strlen(message);
+    int over = message_len/MAXMESSAGE;
+    if (over > 0)
+	for (i = 0; i < over + 1; i++) {
+	    if (message_len > MAXMESSAGE) {
+		safe_memcpy(message_piece, message, MAXMESSAGE);
+		message_piece[MAXMESSAGE] = '\0';
+	    }
+	    else {
+		safe_memcpy(message_piece, message, message_len);
+		message_piece[MAXMESSAGE] = '\0';
+	    }
+	    message_len -= MAXMESSAGE;
+	    message += MAXMESSAGE;
+	    packet = write_packet(flag, num_dests, handles, message_piece, 0);
+	    safeSend(socketNum, packet);
+	}
+    else {
+	packet = write_packet(flag, num_dests, handles, message, 0);
+	safeSend(socketNum, packet);
+    }
 }
 
 int verify_handle(char *handle) {

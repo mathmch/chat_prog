@@ -19,24 +19,7 @@
 #include "arraylist.h"
 #include "packet_writer.h"
 #include "recieve.h"
-#include "sender.h"
-
-#define MAXBUF 1400
-#define HANDLEBUF 100
-#define MAX_HANDLES 9
-#define DEFAULT_SIZE 20
-#define INTRO 1
-#define ACCEPT 2
-#define DECLINE 3
-#define BROADCAST 4
-#define MESSAGE 5
-#define UNKNOWN_HANDLE 7
-#define EXIT 8
-#define EXIT_OK 9
-#define LIST 10
-#define LIST_NUM 11
-#define LIST_HANDLE 12
-#define LIST_END 13
+#include "util.h"
 
 struct Table_Header{
     int current_entries;
@@ -47,7 +30,7 @@ struct Table_Header{
 
 struct Entry{
     uint8_t socketNum;
-    char handle[HANDLEBUF];
+    char handle[MAXHANDLE];
 };
 
 void recvFromClient(int clientSocket);
@@ -150,7 +133,7 @@ void read_sockets(int num_ready, int serverSocket, fd_set *fd_set, struct Table_
 					        table_header->max_entries * 2, table_header->entry_size);
 	    table_header->max_entries *= 2;
 	}
-	memcpy(entry.handle, "Temp", 5);
+	safe_memcpy(entry.handle, "Temp", 5);
 	table_insert(table_header->table, &entry, table_header->entry_size, entry.socketNum);
 	num_ready--;
     }
@@ -170,7 +153,6 @@ void process_data(int socketNum, struct Table_Header *table_header){
     /* if socket disconnects suddenly, close and remove from table */ 
     if (NULL == (packet = recieve_packet(socketNum))) {
 	table_delete(table_header->table, table_header->entry_size, socketNum);
-	close(socketNum);
 	table_header->current_entries--;
 	printf("closed\n");
     }
@@ -181,7 +163,7 @@ void process_data(int socketNum, struct Table_Header *table_header){
 
 void determine_packet_type(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
     uint8_t flag = get_flag(packet);
-    if (flag == INTRO)
+    if (flag == REQUEST)
 	new_client(socketNum, packet, table_header);
     else if (flag == BROADCAST)
 	forward_broadcast(socketNum, packet, table_header);
@@ -201,7 +183,7 @@ void new_client(int socketNum, uint8_t *packet, struct Table_Header *table_heade
     entry.socketNum = socketNum;
     /* header is already in use */
     if (search_entry(entry.handle, table_header) != -1){
-	safeSend(socketNum, write_packet(DECLINE, 0, NULL, NULL, 0));
+	safeSend(socketNum, write_packet(REJECT, 0, NULL, NULL, 0));
 	table_delete(table_header->table, table_header->entry_size, socketNum);
 	close(socketNum);
     }
@@ -214,7 +196,7 @@ void new_client(int socketNum, uint8_t *packet, struct Table_Header *table_heade
 }
 
 void forward_broadcast(int socketNum, uint8_t *packet, struct Table_Header *table_header) {
-    char sender[HANDLEBUF];
+    char sender[MAXHANDLE];
     int i;
     struct Entry *entry;
     get_sender_handle(packet, sender);
@@ -236,7 +218,7 @@ void forward_message(int socketNum, uint8_t *packet, struct Table_Header *table_
     char *dest_handles[MAX_HANDLES + 1];
     uint8_t original_packet[MAXBUF];
     /* make a copy of the packet */
-    memcpy(original_packet, packet, get_length(packet));
+    safe_memcpy(original_packet, packet, get_length(packet));
     get_dest_handles(packet, num_dests, dest_handles);
     for(i = 0; i < num_dests; i++) {
 	/* couldn't find a destination */
@@ -277,6 +259,7 @@ void send_list(int socketNum, struct Table_Header *table_header) {
 	}
     }
     packet = write_packet(LIST_END, 0, NULL, NULL, 0);
+    safeSend(socketNum, packet);
 }
 
 /* returns the socket num of matching entry or -1 if no matches */

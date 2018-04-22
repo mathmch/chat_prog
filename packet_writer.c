@@ -5,22 +5,14 @@
 #include <inttypes.h>
 #include <arpa/inet.h>
 
-#define BASIC_LENGTH 3
-#define MAXHANDLE 100
-#define MAX_HANDLES 9
-#define MAX_LENGTH 1200
-#define INT 4
-#define SHORT 2
-#define FLAG 2
-#define BYTE 1
+#include "util.h"
 
-uint8_t packet[MAX_LENGTH];
+uint8_t packet[MAXBUF];
 
 uint8_t *basic_packet(uint8_t flag) {
     uint16_t length = BASIC_LENGTH;
     length = htons(length);
-    if (NULL == memcpy(packet, &length, SHORT))
-	exit(EXIT_FAILURE);
+    safe_memcpy(packet, &length, SHORT);
     packet[2] = flag;
     return packet;
 }
@@ -29,12 +21,10 @@ uint8_t *handle_packet(uint8_t flag, char *handle) {
     uint8_t handle_len = strlen(handle);
     uint16_t length = BASIC_LENGTH + BYTE + handle_len;
     length = htons(length);
-    if (NULL == memcpy(packet, &length, SHORT))
-	exit(EXIT_FAILURE);
+    safe_memcpy(packet, &length, SHORT);
     packet[2] = flag;
     packet[3] = handle_len;
-    if (NULL == memcpy(packet + BASIC_LENGTH + BYTE, handle, handle_len))
-	exit(EXIT_FAILURE);
+    safe_memcpy(packet + BASIC_LENGTH + BYTE, handle, handle_len);
     return packet;
 }
 
@@ -43,15 +33,11 @@ uint8_t *broadcast_packet(uint8_t flag, char *handle, char *message) {
     uint8_t message_len = strlen(message);
     uint16_t length = BASIC_LENGTH + BYTE + handle_len + message_len;
     length = htons(length);
-    if (NULL == memcpy(packet, &length, SHORT))
-	exit(EXIT_FAILURE);
+    safe_memcpy(packet, &length, SHORT);
     packet[2] = flag;
     packet[3] = handle_len;
-    if (NULL == memcpy(packet + BASIC_LENGTH + BYTE, handle, handle_len))
-	exit(EXIT_FAILURE);
-    if (NULL == memcpy(packet + BASIC_LENGTH + BYTE + handle_len,
-		       message, message_len))
-	exit(EXIT_FAILURE);
+    safe_memcpy(packet + BASIC_LENGTH + BYTE, handle, handle_len);
+    safe_memcpy(packet + BASIC_LENGTH + BYTE + handle_len, message, message_len);
     return packet;
 }
 
@@ -63,8 +49,7 @@ uint8_t *message_packet(uint8_t flag, char *handles[], uint8_t num_dests,
     uint16_t length = BASIC_LENGTH + BYTE;
     packet[2] = flag;
     packet[3] = handle_len;
-    if (NULL == memcpy(packet + BASIC_LENGTH + BYTE, handles[0], handle_len))
-	exit(EXIT_FAILURE);
+    safe_memcpy(packet + BASIC_LENGTH + BYTE, handles[0], handle_len);
     length += handle_len;
     packet[length] = num_dests;
     length += BYTE;
@@ -73,29 +58,24 @@ uint8_t *message_packet(uint8_t flag, char *handles[], uint8_t num_dests,
 	handle_len = strlen(handles[i+1]);
 	packet[length] = handle_len;
 	length += BYTE;
-	if (NULL == memcpy(packet + length, handles[i+1], handle_len))
-	    exit(EXIT_FAILURE);
+        safe_memcpy(packet + length, handles[i+1], handle_len);
 	length += handle_len;
     }
-    if (NULL == memcpy(packet + length, message, message_len))
-	exit(EXIT_FAILURE);
+    safe_memcpy(packet + length, message, message_len);
     length += message_len;
     /* write the total packet length */
     length = htons(length);
-    if (NULL == memcpy(packet, &length, SHORT))
-	exit(EXIT_FAILURE);
+    safe_memcpy(packet, &length, SHORT);
     return packet;
 }
 
 uint8_t *count_packet(uint8_t flag, uint32_t known_handles) {
     uint16_t length = BASIC_LENGTH + BYTE*4;
     length = htons(length);
-    if (NULL == memcpy(packet, &length, SHORT))
-	exit(EXIT_FAILURE);
+    safe_memcpy(packet, &length, SHORT);
     packet[2] = flag;
     known_handles = htonl(known_handles);
-    if (NULL == memcpy(packet + BASIC_LENGTH, &known_handles, INT))
-	exit(EXIT_FAILURE);
+    safe_memcpy(packet + BASIC_LENGTH, &known_handles, INT);
     return packet;
 }
 
