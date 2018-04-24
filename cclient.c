@@ -204,7 +204,10 @@ int read_stdin(int socketNum) {
     return 0;
 }
 
-/* verify and send a message (flag = 5) packet */
+/* verify and send a message (flag = 5) packet 
+ * This function is long but logically very little happens, most of 
+ * the length comes from prints. I felt it would be inapproriate to break
+ * up the logic flow */
 int message_command(char *command, int socketNum) {
     char *token;
     char *handles[MAX_HANDLES + 1];
@@ -212,8 +215,12 @@ int message_command(char *command, int socketNum) {
     int i;
     char *delim = " ";
     token = strtok(command, delim);
+    if (token == NULL){
+	printf("Invalid Command\n");
+	return 0;
+    }
     /* get the number of destinations, if provided */
-    if (isdigit(*token) && strlen(token) == 1) {
+    if (isdigit(*token)) {
 	num_handles = strtol(token, NULL, 10);
 	if (num_handles > 9) {
 	    printf("Number of destinations must be less than 9\n");
@@ -223,6 +230,10 @@ int message_command(char *command, int socketNum) {
     }
     handles[0] = user_name;
     for (i = 0; i < num_handles; i++) {
+	if (token == NULL) {
+	    printf("Not enough handles provided\n");
+	    return 0;
+	}
 	if (verify_handle(token) == -2) {
 	    printf("Invalid handle, handle starts with a number\n");
 	    return 0;

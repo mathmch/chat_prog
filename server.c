@@ -127,7 +127,7 @@ void read_sockets(int num_ready, int serverSocket, fd_set *fd_set, struct Table_
     int j;
     if (FD_ISSET(serverSocket, fd_set)) {
 	/* accept client and register their socket as in use */
-        entry.socketNum = tcpAccept(serverSocket, 1);
+        entry.socketNum = tcpAccept(serverSocket, 0);
 	if (table_header->max_entries <= entry.socketNum) {
 	    table_header->table = realloc_table(table_header->table, table_header->max_entries,
 					        table_header->max_entries * 2, table_header->entry_size);
@@ -155,7 +155,6 @@ void process_data(int socketNum, struct Table_Header *table_header){
     if (NULL == (packet = recieve_packet(socketNum))) {
 	table_delete(table_header->table, table_header->entry_size, socketNum);
 	table_header->current_entries--;
-	printf("closed\n");
     }
     else {
 	determine_packet_type(socketNum, packet, table_header);
